@@ -1,0 +1,565 @@
+{
+	"info": {
+		"_postman_id": "github-copilot-metrics-collection",
+		"name": "GitHub Copilot Metrics API",
+		"description": "Collection for GitHub Copilot Metrics API endpoints. Provides aggregated metrics for various GitHub Copilot features including code completions, IDE chat, GitHub.com chat, and pull request summaries.\n\n**Authentication Required:**\n- Bearer token with scopes: `manage_billing:copilot`, `read:org`, or `read:enterprise`\n- Copilot Metrics API access policy must be enabled for the organization\n\n**Data Notes:**\n- Returns metrics for up to 28 days prior\n- Only includes data for organizations/teams with 5+ members with active Copilot licenses\n- Metrics processed once per day for the previous day\n- Users must have telemetry enabled in their IDE to be counted",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"auth": {
+		"type": "bearer",
+		"bearer": [
+			{
+				"key": "token",
+				"value": "{{github_token}}",
+				"type": "string"
+			}
+		]
+	},
+	"variable": [
+		{
+			"key": "baseUrl",
+			"value": "https://api.github.com",
+			"type": "string"
+		},
+		{
+			"key": "github_token",
+			"value": "",
+			"type": "string",
+			"description": "GitHub Personal Access Token or OAuth token with appropriate scopes"
+		},
+		{
+			"key": "org",
+			"value": "",
+			"type": "string",
+			"description": "Organization name (not case sensitive)"
+		},
+		{
+			"key": "team_slug",
+			"value": "",
+			"type": "string",
+			"description": "Team slug for team-specific metrics"
+		}
+	],
+	"item": [
+		{
+			"name": "Organization Metrics",
+			"item": [
+				{
+					"name": "Get Copilot metrics for an organization",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Validate required variables",
+									"if (!pm.collectionVariables.get('github_token')) {",
+									"    throw new Error('GitHub token is required. Set the github_token collection variable.');",
+									"}",
+									"",
+									"if (!pm.collectionVariables.get('org')) {",
+									"    throw new Error('Organization name is required. Set the org collection variable.');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has metrics data', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0]).to.have.property('date');",
+									"        pm.expect(jsonData[0]).to.have.property('total_active_users');",
+									"        pm.expect(jsonData[0]).to.have.property('total_engaged_users');",
+									"    }",
+									"});",
+									"",
+									"pm.test('Response time is acceptable', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.github+json"
+							},
+							{
+								"key": "X-GitHub-Api-Version",
+								"value": "2022-11-28"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/orgs/{{org}}/copilot/metrics?since={{since}}&until={{until}}&page={{page}}&per_page={{per_page}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orgs",
+								"{{org}}",
+								"copilot",
+								"metrics"
+							],
+							"query": [
+								{
+									"key": "since",
+									"value": "{{since}}",
+									"description": "Show usage metrics since this date (ISO 8601 format: YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "until",
+									"value": "{{until}}",
+									"description": "Show usage metrics until this date (ISO 8601 format: YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "{{page}}",
+									"description": "Page number of results to fetch (default: 1)",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "{{per_page}}",
+									"description": "Number of days per page (max 28, default: 28)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "**Get Copilot metrics for an organization**\n\nReturns a breakdown of aggregated metrics for various GitHub Copilot features for an organization.\n\n**Requirements:**\n- Organization must have 5+ members with active Copilot licenses\n- Copilot Metrics API access policy must be enabled\n- Only organization owners and enterprise billing managers can access\n- Token needs `manage_billing:copilot`, `read:org`, or `read:enterprise` scope\n\n**Response includes:**\n- Total active and engaged users\n- Code completion metrics by language and IDE\n- IDE chat usage statistics\n- GitHub.com chat metrics\n- Pull request summary usage\n- Model-specific breakdowns (including custom models)\n\n**Data Coverage:**\n- Up to 28 days of historical data\n- Processed daily for the previous day\n- Requires user telemetry to be enabled in IDE"
+					}
+				},
+				{
+					"name": "Get Copilot metrics with date range",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Set date range for last 7 days as example",
+									"const today = new Date();",
+									"const lastWeek = new Date(today.getTime() - (7 * 24 * 60 * 60 * 1000));",
+									"",
+									"pm.collectionVariables.set('since', lastWeek.toISOString().split('T')[0]);",
+									"pm.collectionVariables.set('until', today.toISOString().split('T')[0]);",
+									"",
+									"console.log('Date range set:', {",
+									"    since: pm.collectionVariables.get('since'),",
+									"    until: pm.collectionVariables.get('until')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains date-filtered data', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    ",
+									"    if (jsonData.length > 0) {",
+									"        const sinceDate = pm.collectionVariables.get('since');",
+									"        const untilDate = pm.collectionVariables.get('until');",
+									"        ",
+									"        jsonData.forEach(function(item) {",
+									"            pm.expect(item.date).to.be.a('string');",
+									"            if (sinceDate) {",
+									"                pm.expect(item.date >= sinceDate).to.be.true;",
+									"            }",
+									"            if (untilDate) {",
+									"                pm.expect(item.date <= untilDate).to.be.true;",
+									"            }",
+									"        });",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.github+json"
+							},
+							{
+								"key": "X-GitHub-Api-Version",
+								"value": "2022-11-28"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/orgs/{{org}}/copilot/metrics?since={{since}}&until={{until}}&per_page=7",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orgs",
+								"{{org}}",
+								"copilot",
+								"metrics"
+							],
+							"query": [
+								{
+									"key": "since",
+									"value": "{{since}}",
+									"description": "Start date (set automatically to 7 days ago)"
+								},
+								{
+									"key": "until",
+									"value": "{{until}}",
+									"description": "End date (set automatically to today)"
+								},
+								{
+									"key": "per_page",
+									"value": "7",
+									"description": "Number of days to return"
+								}
+							]
+						},
+						"description": "**Get Copilot metrics with date range filtering**\n\nExample request that automatically sets the date range to the last 7 days. The pre-request script calculates the dates dynamically.\n\n**Date Range:**\n- `since`: 7 days ago\n- `until`: today\n- `per_page`: 7 (to match the date range)\n\nThis demonstrates how to filter metrics for specific time periods."
+					}
+				}
+			],
+			"description": "Endpoints for retrieving GitHub Copilot metrics at the organization level."
+		},
+		{
+			"name": "Team Metrics",
+			"item": [
+				{
+					"name": "Get Copilot metrics for a team",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Validate required variables",
+									"if (!pm.collectionVariables.get('github_token')) {",
+									"    throw new Error('GitHub token is required. Set the github_token collection variable.');",
+									"}",
+									"",
+									"if (!pm.collectionVariables.get('org')) {",
+									"    throw new Error('Organization name is required. Set the org collection variable.');",
+									"}",
+									"",
+									"if (!pm.collectionVariables.get('team_slug')) {",
+									"    throw new Error('Team slug is required. Set the team_slug collection variable.');",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response has team metrics data', function () {",
+									"    const jsonData = pm.response.json();",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    if (jsonData.length > 0) {",
+									"        pm.expect(jsonData[0]).to.have.property('date');",
+									"        pm.expect(jsonData[0]).to.have.property('total_active_users');",
+									"        pm.expect(jsonData[0]).to.have.property('total_engaged_users');",
+									"    }",
+									"});",
+									"",
+									"pm.test('Response time is acceptable', function () {",
+									"    pm.expect(pm.response.responseTime).to.be.below(5000);",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.github+json"
+							},
+							{
+								"key": "X-GitHub-Api-Version",
+								"value": "2022-11-28"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/orgs/{{org}}/team/{{team_slug}}/copilot/metrics?since={{since}}&until={{until}}&page={{page}}&per_page={{per_page}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orgs",
+								"{{org}}",
+								"team",
+								"{{team_slug}}",
+								"copilot",
+								"metrics"
+							],
+							"query": [
+								{
+									"key": "since",
+									"value": "{{since}}",
+									"description": "Show usage metrics since this date (ISO 8601 format: YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "until",
+									"value": "{{until}}",
+									"description": "Show usage metrics until this date (ISO 8601 format: YYYY-MM-DD)",
+									"disabled": true
+								},
+								{
+									"key": "page",
+									"value": "{{page}}",
+									"description": "Page number of results to fetch (default: 1)",
+									"disabled": true
+								},
+								{
+									"key": "per_page",
+									"value": "{{per_page}}",
+									"description": "Number of days per page (max 28, default: 28)",
+									"disabled": true
+								}
+							]
+						},
+						"description": "**Get Copilot metrics for a team**\n\nReturns a breakdown of aggregated metrics for various GitHub Copilot features for a specific team within an organization.\n\n**Requirements:**\n- Team must have 5+ members with active Copilot licenses\n- Copilot Metrics API access policy must be enabled for the organization\n- Only organization owners and enterprise billing managers can access\n- Token needs `manage_billing:copilot`, `read:org`, or `read:enterprise` scope\n\n**Response includes:**\n- Total active and engaged users for the team\n- Code completion metrics by language and IDE\n- IDE chat usage statistics\n- GitHub.com chat metrics\n- Pull request summary usage\n- Model-specific breakdowns (including custom models)\n\n**Parameters:**\n- `org`: Organization name (required)\n- `team_slug`: Team slug identifier (required)\n- `since`: Start date filter (optional, ISO 8601 format)\n- `until`: End date filter (optional, ISO 8601 format)\n- `page`: Page number for pagination (optional, default: 1)\n- `per_page`: Results per page (optional, max: 28, default: 28)"
+					}
+				},
+				{
+					"name": "Get team metrics with pagination",
+					"event": [
+						{
+							"listen": "prerequest",
+							"script": {
+								"exec": [
+									"// Set pagination parameters",
+									"pm.collectionVariables.set('page', '1');",
+									"pm.collectionVariables.set('per_page', '14');",
+									"",
+									"console.log('Pagination set:', {",
+									"    page: pm.collectionVariables.get('page'),",
+									"    per_page: pm.collectionVariables.get('per_page')",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						},
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('Status code is 200', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response respects per_page limit', function () {",
+									"    const jsonData = pm.response.json();",
+									"    const perPage = parseInt(pm.collectionVariables.get('per_page'));",
+									"    pm.expect(jsonData).to.be.an('array');",
+									"    pm.expect(jsonData.length).to.be.at.most(perPage);",
+									"});",
+									"",
+									"pm.test('Check for pagination headers', function () {",
+									"    // GitHub API includes Link header for pagination when applicable",
+									"    const linkHeader = pm.response.headers.get('Link');",
+									"    if (linkHeader) {",
+									"        pm.expect(linkHeader).to.be.a('string');",
+									"        console.log('Pagination links available:', linkHeader);",
+									"    }",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.github+json"
+							},
+							{
+								"key": "X-GitHub-Api-Version",
+								"value": "2022-11-28"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/orgs/{{org}}/team/{{team_slug}}/copilot/metrics?page={{page}}&per_page={{per_page}}",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"orgs",
+								"{{org}}",
+								"team",
+								"{{team_slug}}",
+								"copilot",
+								"metrics"
+							],
+							"query": [
+								{
+									"key": "page",
+									"value": "{{page}}",
+									"description": "Page number (set to 1)"
+								},
+								{
+									"key": "per_page",
+									"value": "{{per_page}}",
+									"description": "Results per page (set to 14)"
+								}
+							]
+						},
+						"description": "**Get team metrics with pagination**\n\nExample request demonstrating pagination for team metrics. This request fetches the first 14 days of data.\n\n**Pagination:**\n- `page`: 1 (first page)\n- `per_page`: 14 (half the maximum of 28)\n\nUse the `Link` header in the response to navigate to subsequent pages if more data is available."
+					}
+				}
+			],
+			"description": "Endpoints for retrieving GitHub Copilot metrics at the team level within an organization."
+		},
+		{
+			"name": "Environment Setup",
+			"item": [
+				{
+					"name": "Test API Connectivity",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"pm.test('GitHub API is accessible', function () {",
+									"    pm.response.to.have.status(200);",
+									"});",
+									"",
+									"pm.test('Response contains rate limit info', function () {",
+									"    pm.expect(pm.response.headers.has('x-ratelimit-limit')).to.be.true;",
+									"    pm.expect(pm.response.headers.has('x-ratelimit-remaining')).to.be.true;",
+									"    ",
+									"    console.log('Rate Limit Info:', {",
+									"        limit: pm.response.headers.get('x-ratelimit-limit'),",
+									"        remaining: pm.response.headers.get('x-ratelimit-remaining'),",
+									"        reset: new Date(pm.response.headers.get('x-ratelimit-reset') * 1000).toISOString()",
+									"    });",
+									"});"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/vnd.github+json"
+							},
+							{
+								"key": "X-GitHub-Api-Version",
+								"value": "2022-11-28"
+							}
+						],
+						"url": {
+							"raw": "{{baseUrl}}/user",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"user"
+							]
+						},
+						"description": "**Test API connectivity and authentication**\n\nThis request tests basic connectivity to the GitHub API and validates your authentication token. It also displays current rate limit information.\n\n**Use this request to:**\n- Verify your GitHub token is valid\n- Check your rate limit status\n- Test basic API connectivity\n\nRun this before executing the Copilot metrics requests to ensure everything is properly configured."
+					}
+				}
+			],
+			"description": "Utility requests for testing authentication and API connectivity before using the Copilot metrics endpoints."
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"id": "global-prerequest",
+				"exec": [
+					"// Global pre-request script for common setup",
+					"console.log('=== GitHub Copilot Metrics API Request ===');",
+					"console.log('Organization:', pm.collectionVariables.get('org') || 'Not set');",
+					"console.log('Team Slug:', pm.collectionVariables.get('team_slug') || 'Not set');",
+					"console.log('Base URL:', pm.collectionVariables.get('baseUrl'));",
+					"",
+					"// Check if token is set (without logging it for security)",
+					"const token = pm.collectionVariables.get('github_token');",
+					"console.log('Token configured:', token ? 'Yes' : 'No');",
+					"",
+					"if (!token) {",
+					"    console.warn('⚠️  GitHub token not set. Please configure the github_token collection variable.');",
+					"}"
+				],
+				"type": "text/javascript"
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"id": "global-test",
+				"exec": [
+					"// Global test script for common validations",
+					"",
+					"// Log response details",
+					"console.log('Response Status:', pm.response.status);",
+					"console.log('Response Time:', pm.response.responseTime + 'ms');",
+					"",
+					"// Handle common error responses",
+					"if (pm.response.code === 401) {",
+					"    console.error('❌ Authentication failed. Check your GitHub token and scopes.');",
+					"}",
+					"",
+					"if (pm.response.code === 403) {",
+					"    console.error('❌ Access forbidden. Ensure you have proper permissions and the Copilot Metrics API is enabled.');",
+					"}",
+					"",
+					"if (pm.response.code === 404) {",
+					"    console.error('❌ Resource not found. Check your organization name and team slug.');",
+					"}",
+					"",
+					"if (pm.response.code === 422) {",
+					"    console.error('❌ Copilot Metrics API is disabled for this organization or enterprise.');",
+					"}",
+					"",
+					"// Log rate limit information if available",
+					"const rateLimit = pm.response.headers.get('x-ratelimit-remaining');",
+					"if (rateLimit) {",
+					"    console.log('Rate Limit Remaining:', rateLimit);",
+					"    if (parseInt(rateLimit) < 100) {",
+					"        console.warn('⚠️  Rate limit is getting low:', rateLimit, 'requests remaining');",
+					"    }",
+					"}"
+				],
+				"type": "text/javascript"
+			}
+		}
+	]
+}
