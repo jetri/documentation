@@ -1,0 +1,25 @@
+I need a powerpoint presentation that shows how AI can improve the SDLC process.  That presents the following with visuals as well as text:
+* Different phases in the SDLC
+* Roles for each phases. Limit to:
+   * Business Analyst
+   * Business Stakeholder
+   * Product Owner
+   * Solution Architect
+   * Tech Lead
+   * UI/UX Designer
+   * Software Engineer in Test
+   * QA Engineer
+   * DevOps or platform Engineer
+* Tools used by roles in each phases. Limit it to:
+   * Atlassian Jira, Confluence
+   * VSCode
+   * GitHub Copilot
+   * Figma
+   * Terraform
+   * Lucid chart
+
+Highlight the following as well:
+* MCP servers, how they help
+* Streamlining workflows
+   * Identify what still needs to be manual work per phase. for example reviewing output from AI but be more specific per role
+* How having standardization of documentation etc and feeding more context to AI will help
